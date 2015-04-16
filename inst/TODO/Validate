@@ -1,0 +1,319 @@
+================================================================
+Hi,
+  I really want to push on this to the point where we at least have a workable, defensible validation tool.
+
+  As I see it we can use:
+  1) Y2H, here the major problem (Tony, any progress) is that any genes/proteins that were not either 
+     bait or prey will cause havoc. So we need to know the prey populations for all experiments.
+
+     Given that we can do some things, they are mostly aimed at seeing how close to connected, given 
+     the data, the Y2H graph is. I believe that it cannot be merely a count, but it has to somehow reflect 
+     complex size (or little complexes will look better).
+
+  2) predicted interactions. Tony had a paper - any progress on that front? Last we spoke Ting was going 
+     to get us more data. We could also take all the Y2H data and use the PFAM/SMART domains to see 
+     which domain combinations seem to be showing up. Has anyone done something that simple?
+
+  3) Using the output of apComplex the SBMH predictions from one of the three (and soon to be four) runs 
+     against the final ScISI. Here we are looking to see if the SBMH is larger than a prediction (and the prediction 
+     would need to be modified for what was tested).
+
+  4) The new Bader paper uses SL data to identify likely complex co-members (at least that is one way to think 
+  of it). They look at pairs of genes that have lots of common SL partners and claim that those pairs are related. 
+  We could use that same data, but do something a bit more graph based.
+
+ Comparisons, as Denise did to MIPS or GO might also be useful. 
+
+ Other suggestions?
+
+----------------------
+
+For Tony (by Tony):
+
+1. Generate new ScISI - write a script to generate a new ScISI and provide documentation.
+        Two working models: an ScISI to be used for simulatorAPMS where no sub-complexes are available
+                            an ScISI to be used for SL where sub-complexes are necessary
+        Whatever the methodology, we should be consistent. Either we delete all sub-complexes bi-laterally 
+        or we should not remove any (unless there is some firmer justification as to why we do so)
+
+--> The new script to generate the ScISI is in place. The SL paradigm is now the working model.
+
+        1a. I need to re-tool the vignette since our working paradigm 
+            has changed. There needs to be a large number of changes to the
+            ScISI.Rnw, but that will wait.
+
+                --> In progress...I have made considerable changes today in the Vignette. I am not done, but 
+                    alot of changes have been made.
+
+        --> The script now saves all the data from the comparisons between the sub-interactomes before they
+            are merged. Therefore, we have all the information as to who is deleted as well as all the Jaccard
+            Indices, etc.
+
+                
+
+        1b. Write Scripts to generate summary statistics for the new ScISI. 
+                (The old ones are now obsolete as we have chosen to use a new paradigm)
+
+                --> This has been started but seems to be trickier than I thought...need to think about this 
+                    some more...
+                --> This is done. The script is entitled sumStats.R in the inst/Scripts/ directory. It generates
+                    all the redundant complexes and sub-complexes either within repositories or across repositories.
+
+                        **Need to create Man page
+
+                                -->Done
+
+                --> I will save the pairwise outputs from runCompareComplex to show the relationships between any
+                    two data-sets. This way, we will know how many Krogon complexes were sub-complexes to MIPS. 
+                    Right now, we merge all four complexes and then compare to Krogan, so we lose resolution. 
+
+        1c. Put these new summary stats into the table of ScISI.Rnw
+
+                --> Done
+
+        1d. I had make some minor modifications to a couple of functions so I need to update each man page as well.
+
+                --> Done
+
+        1e. Streamline script to generate the .html files.
+
+                --> In Progress
+
+	
+
+2. Create images for ScISI paper; also some distribution graphs for y2h v. ScISI as well as pathway data. Awaiting
+   the exact structure from Denise so I can generated ap-ms co-membership graphs as well as the some exact graphs.
+
+--> I have graphNEL for each of the crystal structures Denise sent me. There are two protein complexes that we 
+    have a definitive topology. For each constituent protein, I looked in the Y2H data and generated a bait to
+    prey directed graph. Unfortunately, only one protein is found as a bait, and futhermore, it had only one hit. 
+    I also cross referenced these proteins with the predicted interactions and found one interaction from each
+    protein complex. The graphNEL's are located in the inst/extdata/ directory. They have the letter "G" before 
+    the .rda. There is a script called ckCrystStruct.R located in the inst/Scripts/ directory which checks 
+    the interaction in y2h data and ppipred.
+
+        2a. I will generate the co-membership graphNEL's of these objects as well since apComplex identified
+            them exactly.
+
+                --> Done 
+                
+                --> I have a new idea for the generation of these graphs...will see which is better.
+
+        2b. Put some words into the script as well as analyze what these data mean. apComplex can identify 
+            these complexes under certain conditions but even then the y2h data as well as predictions are
+            too sparse to validate at this point.
+        
+                -->In progress
+
+3. Encode the hypergeometric sampling scheme as well as connected component scheme.
+        --> The mean degree statistic has been encoded, but I need to test before I check it into SVN.
+        --> The two graph statistics (mean vertex degree and edge proportion is encoded)
+                
+                3a. I will generate a script to get the summary statistics        
+
+                        --> Done...called the graphSumStats.R in the inst/Scripts/ directory
+
+                                *** Need to create man pages for the new graph statistics scripts
+
+                                        -->Done
+
+                        --> I have written an .Rnw file that shows how to use the graph summary 
+                            statistic functions. It is called graphStatistics.Rnw
+
+                        --> All six of the graph statistics are encoded and fully generated. The
+                            .Rnw file details how to generate these statistics.
+
+                3b. Analysis...in progress
+
+
+4. Determine protein complexes contained in nuclues.
+	
+	4a. Find all nodes which are children of the nucleus node in GO.
+                
+                --> The nucleus GO nodes is "GO:0005634". There are 1127 yeast genes/features that have been directly
+                    annotated to the term nucleus. A few questions that need to be addressed-
+
+                        ?1 - Are there proteins which are entirely nucleus bound? If yes, then each protein complex
+                             to which they belong is also entirely nucleus bound.
+
+                        ?2 - Are there proteins which are entirely outside nucleus? This gives us the protein complexes
+                             which do can eliminate automatically if ?1 is negative.
+
+                        ?3 - How should we categorize complexes if ?1 and ?2 are both false?
+
+                                --> If 75% of members is in nuclues => entire complex is in the nucleus
+
+                --> I have read the paper of Huh WK, et al. concerning the localization of certain ORF's within sub-
+                    components of the yeast cell. The answer to ?1 and ?2 is (at least right now) false. We do not 
+                    have 100% certainty that a certain protein (ORF) exists only within the nucleus or without. To this
+                    end we need to find some strategy as to how to use the localization data.
+
+                --> One strategy is to use the localization data directly. It is necessary (but certainly not sufficient)
+                    that protein co-members need to have the same localization for at least one sub-component of the cell.
+                    An indirect method would be to use to localization data to cut the y2h data (as well as the PPI) data.
+                    This way, we get more confidant interaction data to validate the ScISI.
+ 
+                --> The localization data is contained in the inst/extdata/ directory called "localization.rda"
+	
+	4b. Seach for "nucleus" in MIPS repository
+
+                --> Mips does not have (any obvious way anyhow) a localization of proteins nor genes. We have a list
+                    of genes which are annotated by nucleus from GO; we can make a decision on how to use this 
+                    information with respect to MIPS.
+
+                --> It looks like we can either use the localization data on the Mips protein complexes either directly 
+                    or indirectly as above. 
+
+	4c. Search literature.
+
+                --> Paper of interest: Huh WK, et al. (2003) Global analysis of protein localization in budding yeast. Nature 425(6959):686-91
+                        
+
+5. Download and parse pathway data from Kegg and SGD. 
+        I have already used the KEGG R-data package to cull the information between pathway and orfs
+                --> An incidence matrix for Orfs and Pathways is in the inst/extdata/ directory
+
+        I have downloaded and parsed the .tab file from SGD.
+                --> Need to get the data into an incidence matrix and loaded into the package.
+                        --> Done...in the inst/extdata/ directory
+
+                                *** Create man pages.
+
+        5a. Try to see how the pathway data blends with either Y2H, APMS, and/or localization data.
+
+                --> Preliminary stats show that this data is sparser than y2h.
+
+6. Run simulations on GO and MIPS data. Confirm the viability of apComplex.
+
+7. Work on the paper.
+
+**************************
+RG - March 2 Comments:
+**************************
+
+ 8.  I think we need a data set (ScISI) based only on GO and MIPs and that
+     uses none of the apComplex output.
+
+        --> Done
+
+                ***Need man pages
+                
+                        --> Done
+
+ 9.  Then for the ScISI (possibly for both estimates) we should keep a 
+     vector of the names of complexes that are subcomplexes of
+     other complexes. So that these can be removed by the user, rather than
+     having us do it.
+
+        --> For the verified it is done.
+
+                ***Need man pages
+
+                        -->Done
+
+        --> For the overall estimate, I am going to check whether keeping
+            a record of the sub-comlexes (and redundant complexes) should 
+            be done at the times we merge or to keep a record of all pair
+            wise comparisons.
+                
+                --> As it stands, we don't lose any information if we 
+                    only keep the record at the times of merging, but 
+                    it takes some effort to reverse engineer everything
+                    backwards. The second option takes no reverse 
+                    engineering, but stores much more data.
+
+                --> Right now the records at stored as data-sets are merged
+                        
+                        ***Create man pages
+
+ 10. On reflection, it seems that both GO and MIPs complexes are verified and
+     there is not much we can say about them. The
+     only place where validation is needed is for apComplex estimates. There,
+     we should find some that are not largely overlapping with GO and MIPS 
+     complexes (or maybe just find all to start with), where the majority of
+     proteins localize to the nucleus. For these complexes we should have
+     reasonable Y2H data.
+
+        --> In progress...
+
+                --> These complexes are found
+
+ 11. We will say a complex is in
+     the nucleus if some fraction of its constituent proteins are annotated
+     at the appropriate GO node ("GO:0005634" it seems). Perhaps we could 
+     start by being pretty stringent (say 75%, but if that does not give us 
+     a reasonable number then try 50%). 
+
+        --> In progress
+
+                --> Done...right now all protein complexes are reported with    
+                    percentage of proteins which have been annotated to the 
+                    nucleus.
+
+ 12. I think we also want to concentrate on complexes that do not have a lot
+     of overlap with any MIPS or GO complexes (using the Jaccard index
+     as the measure).
+
+        --> Same as 10
+
+                --> Done
+
+ 13. For each of these look to see if we have reasonable amount of Y2H data.
+     All localization data have long since been included in GO by the SGD folks, 
+     so there is no need (and probably it will not be a good idea) to get the
+     data from other sources (same for KEGG, that is what Ting does, so if you need
+     something, talk to him or me first and save some time).
+
+
+****************************
+07 March 2006
+TC
+****************************
+
+1. Streamline script to generate .html files
+
+2. Change the yeastData class to new name and make sure propogations are caught; make changes in vignette.
+
+3. Create the graphNELs with combined data sets (i.e. crystal, y2h, and ppi)
+
+4. Find complexes with very little overlap with MIPS and GO to analyze with Y2H, PPI, and Pathway data.
+
+        --> Done...created a script called getNucOrfs.R in the inst/Scripts/ directory
+
+5. From those complexes from (4), determine which we can reasonably consider yeast nucleus complexes.
+
+        --> Done
+
+6. I have decided record the summary stats at each merging process...since we are no longer deleting 
+   protein sub-complexes, there is no need to reverse engineer to obtain data, so this is the correct
+   place to record the summary stats.
+
+        --> Done
+        
+        *** Need to create man pages for the data sets.
+
+****************************
+04 April 2007
+TC
+****************************
+
+1. Update the ScISI as per the directed graph analysis paper. I have decided to remove proteins $p$ such that
+   out(p) >> in(p). We believe that the converse is a function of FN observations, but we don't know anything 
+   for these data points.
+
+2. Contact DS about using one single data structure for complex estimates.
+
+3. Update man pages and vignette to reflect the updated data and algorithms.
+
+4. Make sure the package passes Check.
+
+5. Work on the associated manuscript.
+
+6. We still need to figure out how to justify the ScISI? Mainly this is a justification of the estimates 
+   generated by apComplex. 
+   
+   a. We can compare Gavin02 with that of Gavin06. These estimates should be similar since there is a higher
+      chance that these data sets might be more identically distributed than between different authors.
+
+   b. Simulation studies defined off verified.
+
